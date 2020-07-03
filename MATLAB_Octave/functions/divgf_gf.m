@@ -30,7 +30,7 @@ function [gf_value] = divgf_gf(operandA, varargin)
 % %     > alpha_6   => 8           => 6
 %
 %     See also  BUILDGF, GF2DEC, DEC2GF, MULTGF_GF,
-%               MULTGF_DEC, DIVGF_DEC.
+%               MULTGF_DEC, DIVGF_GF.
 
 i_p = inputParser;
 

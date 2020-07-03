@@ -1,5 +1,5 @@
 function [dec_value] = divgf_dec(operandA, varargin)
-%DIVGF_GF Compute 'a' divided by 'b' in GF (Matlab associated)
+%DIVGF_DEC Compute 'a' divided by 'b' in decimal (Matlab associated)
 %     By convention, anything divided by 0_gf is 0_gf.
 %     WARNING: To be functional, buildgf must have been called
 %     at least one time.
