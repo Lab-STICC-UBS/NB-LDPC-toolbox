@@ -1,14 +1,14 @@
-function [dec_value] = gf2dec(gf_value, varargin)
-%GF2DEC Get decimal value from gf value (Matlab associated)
-%     WARNING: To be functional, buildGF must have been called
+function [gf_value] = multgf_gf(operandA, varargin)
+%MULTGF_GF Compute 'a' times 'b' in GF (Matlab associated)
+%     WARNING: To be functional, buildgf must have been called
 %     at least one time.
-% 
+%
 %     Example:
-%     >> buildGF(3);
-%     >> gf2dec(4)
+%     >> buildgf(3);
+%     >> multgf_gf(5, 2)
 %     ans =
 %           5
-% 
+%
 % %     GF symbols correspondance :
 % %     GF Symbol  => Code Index  => Matlab Decimal value
 % %     ------------------------------------------
@@ -27,14 +27,14 @@ function [dec_value] = gf2dec(gf_value, varargin)
 % %     > alpha_4   => 6           => 7
 % %     > alpha_5   => 7           => 8
 % %     > alpha_6   => 8           => 6
-%   
-%     See also  BUILDGF, DEC2GF, MULTGF_GF, MULTGF_DEC,
+%
+%     See also  BUILDGF, GF2DEC, DEC2GF, MULTGF_DEC,
 %               DIVGF_GF, DIVGF_DEC.
 
 i_p = inputParser;
 
     function [bOk] = validFunc(x)
-        if isempty(varargin)
+        if length(varargin) == 1
             if length(x) == 1
                 if int64(x) == x
                     bOk = true;
@@ -50,22 +50,35 @@ i_p = inputParser;
         bOk = false;
         return;
     end
+i_p.addRequired('operandA', @validFunc);
 
-i_p.addRequired('gf_value', @validFunc);
-i_p.addParameter('Reset', false, @islogical);
-i_p.parse(gf_value, varargin{:});
-gf_value_ = i_p.Results.gf_value;
-
-persistent gf2dec_table;
-
-if i_p.Results.Reset  
-    gf2dec_table = gf_value_;
-else
-    if isempty(gf2dec_table)
-        error('Value is not initialised! Run buildGF( p_gf, primitive) to initialize.'); 
+    function [bOk] = validFuncBis(x)
+        if length(varargin) == 1
+            if length(x) == 1
+                if int64(x) == x
+                    bOk = true;
+                    return;
+                end
+            end
+        end
+        bOk = false;
     end
-    dec_value = gf2dec_table(gf_value_);
+i_p.addOptional('operandB', [], @validFuncBis);
+
+i_p.addParameter('Reset', false, @islogical);
+i_p.parse(operandA, varargin{:});
+A = i_p.Results.operandA;
+B = i_p.Results.operandB;
+
+persistent mult_table_gf;
+
+if i_p.Results.Reset
+    mult_table_gf = A;
+else
+    if isempty(mult_table_gf)
+        error('Value is not initialised! Run buildgf( p_gf, primitive) to initialize.');
+    end
+    gf_value = mult_table_gf(A, B);
 end
 
 end
-

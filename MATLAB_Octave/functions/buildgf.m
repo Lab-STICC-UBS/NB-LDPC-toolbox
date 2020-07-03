@@ -1,31 +1,39 @@
-% build_GF.m
-% Author :  Cédric Marchand
-% build finite field vectors
-% GF symbols correspondance : 
-% 0        = > 1      = > 1
-% alpha_k  = > k + 2  = > natural value + 1, for k > =  0
-% Example : 
-% q = 8
-% GF       = > Code Index  = > Natural value
-% 0_gf     = > 1           = > 1
-% alpha_0  = > 2           = > 2
-% alpha_1  = > 3           = > 3
-% alpha_2  = > 4           = > 5
-% alpha_3  = > 5           = > 5
-% alpha_4  = > 6           = > 7
-% alpha_5  = > 7           = > 8
-% alpha_6  = > 8           = > 6
+function buildgf(p_gf, varargin)
+%BUILDGF Initialize tools for NB-LDPC
+%     Authors :  Cédric Marchand, Camille Monière
+%     Build finite field vectors and initialize
+%     dec2gf, gf2dec, multgf_gf, multgf_dec,
+%     divgf_gf and divgf_dec functions.
+% 
+% %     GF symbols correspondance :
+% %     GF Symbol  => Code Index  => Matlab Decimal value
+% %     ------------------------------------------
+% %     0_gf       => 1           => 1
+% %     alpha_k    => k + 2       => (true decimal value) + 1
+% %         this for k >=  0
+% %
+% %     Example with q = 8:
+% %     > GF Symbol => Code Index  => Matlab Decimal Value
+% %     > ------------------------------------------
+% %     > 0_gf      => 1           => 1
+% %     > alpha_0   => 2           => 2
+% %     > alpha_1   => 3           => 3
+% %     > alpha_2   => 4           => 5
+% %     > alpha_3   => 5           => 5
+% %     > alpha_4   => 6           => 7
+% %     > alpha_5   => 7           => 8
+% %     > alpha_6   => 8           => 6
+%   
+%     See also  DEC2GF, GF2DEC, MULTGF_GF, MULTGF_DEC,
+%               DIVGF_GF, DIVGF_DEC.
 
-function buildGF(p_gf, primitive)
-%BUILDGF
-%   Build GF tools for code management
 
 i_p = inputParser;
 
 i_p.addRequired('p_gf', @(x) int64(x) == x);
 i_p.addOptional('primitive', []);
 
-i_p.parse(p_gf, primitive);
+i_p.parse(p_gf, varargin{:});
 
 
 if ~isempty(i_p.Results.primitive)
@@ -63,7 +71,7 @@ else
     
 end
 
-clear('dec2gf', 'gf2dec_local', 'multgf_gf', 'multgf_dec', 'divgf_gf', 'divgf_dec');
+clear('dec2gf', 'gf2dec', 'multgf_gf', 'multgf_dec', 'divgf_gf', 'divgf_dec');
 
 p_gf_ = i_p.Results.p_gf;
 
@@ -81,7 +89,7 @@ gf2dec_local(2) = 1;
 % build GF to decimal (GF2dec)
 for i = 1 : q_gf - 2
     
-    GF_vector = [0 GF_vector(1 : end - 1)]; %shif right (multiplication by x)
+    GF_vector = [0 GF_vector(1 : end - 1)]; % right shift (multiplication by x)
     
     if (GF_vector(end) == 1) % compute modulo primitive
         GF_vector =  xor(GF_vector, primitive_);
@@ -98,11 +106,10 @@ end
 gf2dec_local = gf2dec_local + 1;
 
 %build binary to GF
-[~, dec2gf] = sort(gf2dec_local);
+[~, dec2gf_local] = sort(gf2dec_local);
 
 
-%%
-%build multiplication table GF
+%% build multiplication table GF
 mult_table_gf = ones(q_gf, q_gf, 'uint16');
 for i = 2 : q_gf
     mult_table_gf(2 : end, i) = i - 2 : q_gf + i - 4;
@@ -111,7 +118,7 @@ mult_table_gf(2 : end, 2 : end)  = mod(mult_table_gf(2 : end, 2 : end), q_gf - 1
 
 
 
-%build division table GF
+%% build division table GF
 div_table_gf = ones(q_gf, q_gf);
 for i = 2 : q_gf
     div_table_gf(2 : end, i) =  - i + 2 : q_gf - i;
@@ -128,7 +135,7 @@ for i = 1 : q_gf
 end
 
 
-% build division table decimal
+%% build division table decimal
 div_table_dec = zeros(q_gf, q_gf, 'uint16');
 for i = 1 : q_gf
     for j = 1 : q_gf
@@ -136,7 +143,15 @@ for i = 1 : q_gf
     end
 end
 
+
+%% Reset functions
+
 gf2dec(gf2dec_local, 'Reset', true);
+dec2gf(dec2gf_local, 'Reset', true);
+multgf_gf(mult_table_gf, 'Reset', true);
+divgf_gf(div_table_gf, 'Reset', true);
+multgf_dec(mult_table_dec, 'Reset', true);
+divgf_dec(div_table_dec, 'Reset', true);
 
 end
 
