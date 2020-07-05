@@ -9,20 +9,20 @@ function buildgf(p_gf, varargin)
 % %     GF Symbol  => Code Index  => Matlab Decimal value
 % %     ------------------------------------------
 % %     0_gf       => 1           => 1
-% %     alpha_k    => k + 2       => (true decimal value) + 1
+% %     alpha^k    => k + 2       => (true decimal value) + 1
 % %         this for k >=  0
 % %
 % %     Example with q = 8:
 % %     > GF Symbol => Code Index  => Matlab Decimal Value
 % %     > ------------------------------------------
 % %     > 0_gf      => 1           => 1
-% %     > alpha_0   => 2           => 2
-% %     > alpha_1   => 3           => 3
-% %     > alpha_2   => 4           => 5
-% %     > alpha_3   => 5           => 5
-% %     > alpha_4   => 6           => 7
-% %     > alpha_5   => 7           => 8
-% %     > alpha_6   => 8           => 6
+% %     > alpha^0   => 2           => 2
+% %     > alpha^1   => 3           => 3
+% %     > alpha^2   => 4           => 5
+% %     > alpha^3   => 5           => 5
+% %     > alpha^4   => 6           => 7
+% %     > alpha^5   => 7           => 8
+% %     > alpha^6   => 8           => 6
 %   
 %     See also  DEC2GF, GF2DEC, MULTGF_GF, MULTGF_DEC,
 %               DIVGF_GF, DIVGF_DEC.
@@ -49,6 +49,8 @@ if ~isempty(i_p.Results.primitive)
     end  
 else
     switch i_p.Results.p_gf
+        case 1
+            primitive_ = [1 0]; %GF[2]
         case 2
             primitive_ = [1 1 1]; %GF[4]
         case 3
