@@ -1,0 +1,68 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+#Unwanted Directory
+*.vscode
+*solution*
+*hls_project
+*__pycache__
+*build
+*obj
+*.pyc
+
+#HLS artifacts
+*hls.log
+*.settings
+*.vivado*
+*.cproject
+*.project
+*.apc
+*.reference
+*.flow.log
+
+#octave artifacts
+*octave-workspace
+*~
+
+# Log Files
+*.log
+
+# LaTeX Auxiliry files
+*.aux
+*.fls
+*.fdb_latexmk
+*.nav
+*.toc
+*.snm
+*.synctex
+*.synctex.gz
