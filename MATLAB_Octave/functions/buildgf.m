@@ -4,7 +4,7 @@ function buildgf(p_gf, varargin)
 %     Build finite field vectors and initialize
 %     dec2gf, gf2dec, multgf_gf, multgf_dec,
 %     divgf_gf and divgf_dec functions.
-% 
+%
 % %     GF symbols correspondance :
 % %     GF Symbol  => Code Index  => Matlab Decimal value
 % %     ------------------------------------------
@@ -23,7 +23,7 @@ function buildgf(p_gf, varargin)
 % %     > alpha^4   => 6           => 7
 % %     > alpha^5   => 7           => 8
 % %     > alpha^6   => 8           => 6
-%   
+%
 %     See also  DEC2GF, GF2DEC, MULTGF_GF, MULTGF_DEC,
 %               DIVGF_GF, DIVGF_DEC.
 
@@ -32,6 +32,8 @@ i_p = inputParser;
 
 i_p.addRequired('p_gf', @(x) int64(x) == x);
 i_p.addOptional('primitive', []);
+i_p.addParameter('Save', false, @islogical);
+i_p.addParameter('Reset', true, @islogical);
 
 i_p.parse(p_gf, varargin{:});
 
@@ -43,10 +45,10 @@ if ~isempty(i_p.Results.primitive)
         for i = 1  : length(i_p.Results.primitive)
             cond = (0 ==  i_p.Results.primitive(i)) || (i_p.Results.primitive(i) == 1);
             if ~cond
-                 error('primitive should contains "0" or "1".');
+                error('primitive should contains "0" or "1".');
             end
         end
-    end  
+    end
 else
     switch i_p.Results.p_gf
         case 1
@@ -55,25 +57,25 @@ else
             primitive_ = [1 1 1]; %GF[4]
         case 3
             primitive_ = [1 1 0 1]; %GF[8]
-        case 4  
+        case 4
             primitive_ = [1 1 0 0 1]; %GF[16], 1 + x + x^4
-        case 5  
+        case 5
             primitive_ = [1 0 1 0 0 1]; %GF[32]
-        case 6  
+        case 6
             primitive_ = [1 1 0 0 0 0 1]; %GF[64]
-        case 8  
+        case 8
             primitive_ = [1 0 1 1 1 0 0 0 1]; %GF[256]
-        case 10 
+        case 10
             primitive_ = [1 0 0 1 0 0 0 0 0 0 1]; %GF[1024]
-        case 11 
+        case 11
             primitive_ = [1 0 1 0 0 0 0 0 0 0 0 1]; %GF[2048]
-        case 12 
+        case 12
             primitive_ = [1 1 0 0 1 0 1 0 0 0 0 0 1]; % GF[4048]
     end
     
 end
 
-clear('dec2gf', 'gf2dec', 'multgf_gf', 'multgf_dec', 'divgf_gf', 'divgf_dec');
+
 
 p_gf_ = i_p.Results.p_gf;
 
@@ -146,14 +148,22 @@ for i = 1 : q_gf
 end
 
 
-%% Reset functions
-
-gf2dec(gf2dec_local, 'Reset', true);
-dec2gf(dec2gf_local, 'Reset', true);
-multgf_gf(mult_table_gf, 'Reset', true);
-divgf_gf(div_table_gf, 'Reset', true);
-multgf_dec(mult_table_dec, 'Reset', true);
-divgf_dec(div_table_dec, 'Reset', true);
-
+%% Save if asked
+if i_p.Results.Save
+   filename = "GF" + string(q_gf) + ".mat";
+   save(filename, "dec2gf_local", "gf2dec_local", "mult_table_dec", "mult_table_gf", "div_table_dec", "div_table_gf", '-v7');
 end
 
+%% Reset functions if asked
+if i_p.Results.Reset
+    clear('dec2gf', 'gf2dec', 'multgf_gf', 'multgf_dec', 'divgf_gf', 'divgf_dec');
+    
+    gf2dec(gf2dec_local, 'Reset', true);
+    dec2gf(dec2gf_local, 'Reset', true);
+    multgf_gf(mult_table_gf, 'Reset', true);
+    divgf_gf(div_table_gf, 'Reset', true);
+    multgf_dec(mult_table_dec, 'Reset', true);
+    divgf_dec(div_table_dec, 'Reset', true);
+end
+
+end
