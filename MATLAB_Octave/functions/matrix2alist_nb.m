@@ -1,26 +1,27 @@
-% matrix2alist_nb.m
-% autheur: Cédric Marchand
-% convert a Non-Binary parity matrix to the alist format, output in a text file
+function [structAlist] = matrix2alist_nb(parityMatrix, GF)
+%MATRIX2ALIST_NB Convert a Matlab parity matrix to an alist structure.
+%
+%
+% author: Cédric Marchand, Camille Monière
+% License: BSD
+
+i_p = inputParser;
+
+i_p.addRequired('parityMatrix')
+i_p.addRequired('GF', @(x) uint16(x) == x);
+
+i_p.parse(parityMatrix, GF);
+
+parityMatrix_ = i_p.Results.parityMatrix;
+GF_ = i_p.Results.GF;
+
+H_bin = parityMatrix_;
+H_bin( parityMatrix_ > 1 ) = 1;
+H_bin( parityMatrix_ < 2 ) = 0;
 
 
-clear all;
-clc;
-
-H = load( 'matrix.txt');
-
-%function [N,M,dvmax,dcmax,dv,dc,nlist,mlist] = matrix2alist_nb(H)
-
-fileID =fopen('alist.txt','w');
-fclose(fileID);
-
-
-H_bin = H;
-H_bin( H > -1 ) = 1;
-H_bin( H<0 ) = 0;
-
-
-[M,N] = size(H);
-dc = sum(H_bin,2);
+[M,N] = size(parityMatrix_);
+dc = sum(H_bin,2)';
 dv = sum(H_bin,1);
 dcmax = max(dc);
 dvmax = max(dv);
@@ -28,40 +29,26 @@ dvmax = max(dv);
 [nlist,~] = find(H_bin);
 [mlist,~] = find(H_bin');
 
-GF=64;
+pcMatrix = zeros(N, dvmax);
+k=0;
+for i=1:N
+    for j=1:dv(i)
+        pcMatrix(i, (j - 1) * 2 + 1) = nlist(k + j );
+        pcMatrix(i, j * 2) = parityMatrix_( nlist(k + j  ),i) - 2;
+    end
+    k=k+dv(i);
+end
 
-%write in a file named alist.txt
-     fileID =fopen('alist.txt','at');    
-      fprintf(fileID,'%d %d %d \n %d %d \n ',N,M,GF,dvmax,dcmax);
-    for i=1:N
-        fprintf(fileID,'%d ',dv(i));
+vnMatrix = zeros(M, dcmax);
+k=0;
+for i=1:M
+    for j=1:dc(i)
+        vnMatrix(i, (j - 1) * 2 + 1) = mlist(k + j );
+        vnMatrix(i, j * 2) = parityMatrix_( i, mlist(k + j  )) - 2;
     end
-    fprintf(fileID,' \n ');
-    for i=1:M
-        fprintf(fileID,'%d ',dc(i));
-    end
-    fprintf(fileID,' \n ');
-    k=0;
-    for i=1:N
-        for j=1:dv(i)
-            fprintf(fileID,'%d ',nlist(k + j ));
-            fprintf(fileID,'%d ',H( nlist(k + j  ),i));
-        end
-        k=k+dv(i);
-        fprintf(fileID,' \n ');
-    end
-    
-    k=0;
-    for i=1:M
-        for j=1:dc(i)
-            fprintf(fileID,'%d ',mlist(k + j ));
-            fprintf(fileID,'%d ',H( i, mlist(k + j  )));
-        end
-        k=k+dc(i);
-        fprintf(fileID,' \n ');
-    end
+    k=k+dc(i);
+end
 
-    
-      fclose(fileID);   
+structAlist = struct('N', N, 'M', M, 'GF', GF_, 'dv_max', dvmax, 'dc_max', dcmax, 'dv_vector', dv, 'dc_vector', dc,'pcMatrix', pcMatrix, 'vnMatrix', vnMatrix);
 
-%end
+end
