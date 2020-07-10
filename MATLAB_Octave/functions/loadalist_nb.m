@@ -19,7 +19,7 @@ function [parityMatrix, structAlist] = loadalist_nb(filePath)
 %   [~, structAlist] = LOADALIST_NB('/path/to/alist.txt') ignore the
 %   parity matrix output and store the alist structure in structAlist.
 % 
-%   authors: Cédric Marchand, Camille Moniére
+%   authors: Cï¿½dric Marchand, Camille Moniï¿½re
 %   License: BSD
 
 
@@ -31,8 +31,8 @@ GF = fscanf(fileID,'%d',1);
 dvmax = fscanf(fileID,'%d',1);
 dcmax = fscanf(fileID,'%d',1);
 
-dc=zeros(1,M);
 dv=zeros(1,N);
+dc=zeros(1,M);
 
 matrix=ones(M,N);
 matrix2=ones(M,N);
