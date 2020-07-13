@@ -1,5 +1,5 @@
 function [structAlist] = matrix2alist_nb(parityMatrix, GF)
-%MATRIX2ALIST_NB Convert a Matlab parity matrix to an alist structure.
+%MATRIX2ALIST_NB Convert a parity matrix to a NB LDPC alist structure.
 %
 %
 % author: Cédric Marchand, Camille Monière

@@ -1,6 +1,12 @@
 function [parityMatrix] = alist2matrix_nb(structAlist)
-%ALIST2MATRIX_NB Converte NB LDPC Alist structure to parity matrix
+%ALIST2MATRIX_NB Convert NB LDPC Alist structure to parity matrix
 %   Detailed explanation goes here
+% 
+%   Authors: Cédric Marchand, Camille Monière
+%   License: BSD
+% 
+%   See also   BUILDGF, LOADALIST_NB, MATRIX2ALIST_NB
+
 
 matrix1 = ones(structAlist.M, structAlist.N);
 
