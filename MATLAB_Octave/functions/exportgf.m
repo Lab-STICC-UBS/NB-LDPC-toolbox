@@ -1,5 +1,5 @@
 function [bOk] = exportgf(p_gf, filePrefix)
-%SAVEBUILD Summary of this function goes here
+%SAVEBUILD Write GF to a text file
 %   Detailed explanation goes here
 
 i_p = inputParser;

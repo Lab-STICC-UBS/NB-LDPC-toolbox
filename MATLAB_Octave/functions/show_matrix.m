@@ -1,5 +1,5 @@
 
-H= load('N576_K480_GF64_matrix.txt');
+H= loadalist_nb('alist_60_40_64.txt');
 
 figure(1);
 colormap (colorcube(65));

@@ -1,13 +1,15 @@
 
-% DVB_T2_QAM.m
-% author: Cédric Marchand
-% construction of DVB-T2 QAM gray constellation 
-% plot constellation and write constellation in a file
+
 
 %clear all;
 %clc;
 
 function [constellation] = DVB_T2_QAM(QAM)
+%DVB_T2_QAM Construction of DVB-T2 QAM gray constellation
+% 
+%   author: Cédric Marchand
+%    
+%   plot constellation and write constellation in a file
 
 gray = @(x) xor(x, [ 0 x(1:end-1) ] ); %convert binary to gray
 
