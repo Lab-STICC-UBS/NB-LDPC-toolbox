@@ -13,6 +13,265 @@
  * 	- code_t code : Structure that describes the code
  * Outputs       :
  */
+void LoadCode2Dump(const char * FileMatrix, code_t * code) {
+	int	   M;
+	int	   N;
+	int	   GF;
+	int	   logGF;
+	int	   n;
+	int	   m;
+	int	   k;
+	char * FileName = malloc(STR_MAXSIZE);
+	double temp;
+
+	// Load the files corresponding to code (graph, size, GF)
+	strncpy(FileName, FileMatrix, STR_MAXSIZE);
+	FILE * f = fopen(FileName, "r");
+	if (f == NULL) {
+		printf("Erreur a l'ouverture du fichier... (%s)\n", FileMatrix);
+		exit(EXIT_FAILURE);
+	}
+
+	fscanf(f, "%d", &N);
+	fscanf(f, "%d", &M);
+	fscanf(f, "%d", &GF);
+	//    GF = 128;
+	temp		= log((double)(GF));
+	temp		= temp / log((double)2.0);
+	temp		= rint(temp);
+	logGF		= (int)temp;
+	code->N		= N;
+	code->M		= M;
+	code->K		= N - M;
+	code->rate	= (float)(N - M) / N;
+	code->GF	= GF;
+	code->logGF = logGF;
+
+	printf("Parameters [N = %d, M = %d, NmK = %d, GF = %d]\n", N, M, N - M, GF);
+
+	code->columnDegree = calloc(N, sizeof(int));
+	code->rowDegree	   = calloc(M, sizeof(int));
+
+	if (strstr(FileName, ".ref") == NULL) {
+
+		for (n = 0; n < N; n++) {
+			fscanf(f, "%d", &code->columnDegree[n]);
+		}
+		for (n = 0; n < N; n++) {
+			printf("%d, ", code->columnDegree[n]);
+		}
+		printf("\n");
+
+		for (m = 0; m < M; m++) {
+			fscanf(f, "%d", &code->rowDegree[m]);
+		}
+		for (m = 0; m < M; m++) {
+			printf("%d, ", code->rowDegree[m]);
+		}
+		printf("\n");
+
+	} else {
+
+		int rowdeg, coldeg;
+		fscanf(f, "%d", &coldeg);
+		fscanf(f, "%d", &rowdeg);
+		for (int n = 0; n < N; n++)
+			code->columnDegree[n] = coldeg;
+		for (int m = 0; m < M; m++)
+			code->rowDegree[m] = rowdeg;
+	}
+
+	code->mat = calloc(M, sizeof(int *));
+	//if ( code->mat == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	for (m = 0; m < M; m++) {
+		code->mat[m] = calloc(code->rowDegree[m], sizeof(int));
+		//if ( code->mat[m] == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	}
+	code->matValue = calloc(M, sizeof(int *));
+	for (m = 0; m < M; m++) {
+		code->matValue[m] = calloc(code->rowDegree[m], sizeof(int));
+		//if ( code->matValue [m] == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	}
+
+	if (strstr(FileName, ".kn") != NULL) {
+		printf(" \n KN alist format is used! \n");
+		for (m = 0; m < M; m++) {
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &code->mat[m][k]);
+				code->mat[m][k] -= 1; // Pour E. Boutillon
+			}
+		}
+
+		for (m = 0; m < M; m++)
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &code->matValue[m][k]);
+				code->matValue[m][k] += 1; // Pour E. Boutillon
+			}
+
+	} else if (strstr(FileName, ".matlab") != NULL) {
+
+		printf(" \n MATLAB alist format is used! \n");
+		for (m = 0; m < M; m++) {
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &code->mat[m][k]);
+				code->mat[m][k] -= 1;
+			}
+		}
+		for (m = 0; m < M; m++)
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &code->matValue[m][k]);
+			}
+
+	} else if (strstr(FileName, ".ubs.bis") != NULL) {
+
+		printf(" \n UBS alist format is used! \n");
+		int temp_int;
+		for (m = 0; m < M; m++) {
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &temp_int);
+				assert((temp_int - 1) < N);
+				code->mat[m][k] = temp_int - 1;
+
+				fscanf(f, "%d", &temp_int);
+				code->matValue[m][k] = temp_int;
+
+				//                  printf("%d | ", code->matValue[m][k]); fflush( stdout ); //temp_int, GF - temp_int);
+				assert(code->matValue[m][k] < GF);
+				assert(code->matValue[m][k] != 0);
+			}
+			printf("\n");
+		}
+
+	} else if (strstr(FileName, ".ubs") != NULL) {
+		printf(" \n UBS alist format is used! \n");
+		int temp_int;
+		for (m = 0; m < M; m++) {
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &temp_int);
+				code->mat[m][k] = temp_int - 1;
+
+				fscanf(f, "%d", &temp_int);
+				code->matValue[m][k] = (temp_int + 1); // % 128;
+			}
+		}
+
+	} else if (strstr(FileName, ".ref") != NULL) {
+		printf(" \n REF alist format is used! \n");
+		int temp_int;
+		for (m = 0; m < M; m++) {
+			printf("CN %2d : ", m);
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &temp_int);
+				code->mat[m][k] = temp_int;
+
+				printf("%2d ", code->mat[m][k]);
+
+				code->matValue[m][k] = rand() % (GF - 6) + 3;
+			}
+			printf("\n");
+		}
+
+	} else if (strstr(FileName, ".ccsds") != NULL) {
+		printf(" \n CCSDS alist format is used! \n");
+		int temp_int;
+		for (m = 0; m < M; m++) {
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &temp_int); // POSITION DU CN, USELESS !
+				fscanf(f, "%d", &temp_int);
+				code->mat[m][k] = (temp_int - 1); // POSITION DU VN
+
+				fscanf(f, "%d", &temp_int);
+				code->matValue[m][k] = (temp_int + 1);
+			}
+		}
+
+	} else if (strstr(FileName, ".nasa") != NULL) {
+		printf(" \n NASA alist format is used! \n");
+		//
+		// ON RETRANCHE (1) A LA VALEUR DES COLONNES ET ON AJOUTE
+		// (1) A LA VALEUR DES ALPHAS
+		//
+		int temp_int;
+		for (m = 0; m < M; m++) {
+			printf("ROW %2d : ", m);
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%d", &temp_int);
+				code->mat[m][k] = temp_int - 1;
+
+				fscanf(f, "%d", &temp_int);
+				code->matValue[m][k] = (temp_int + 1);
+
+				printf("%2d (%3d) ", code->mat[m][k], code->matValue[m][k]);
+			}
+			printf("\n");
+		}
+
+	} else if (strstr(FileName, ".fake") != NULL) {
+		printf(" \n FAKE alist format is used! \n");
+		//
+		// ON RETRANCHE (1) A LA VALEUR DES COLONNES ET ON AJOUTE
+		// (1) A LA VALEUR DES ALPHAS
+		//
+		int	 temp_int;
+		int	 offset = 0;
+		char buffer[256];
+		for (m = 0; m < M; m++) {
+			printf("ROW %2d : ", m);
+			for (k = 0; k < code->rowDegree[m]; k++) {
+				fscanf(f, "%s", buffer);
+				if (strcmp(buffer, "#") == 0) {
+					fscanf(f, "%d", &offset);
+					//printf("Offset = %d\n", offset);
+					k = k - 1;
+				} else {
+					temp_int = atoi(buffer);
+					//                    fscanf(f,"%d",&temp_int);
+					code->mat[m][k] = temp_int - 1 + offset;
+
+					fscanf(f, "%d", &temp_int);
+					code->matValue[m][k] = (temp_int + 1);
+
+					printf("%2d (%3d) ", code->mat[m][k], code->matValue[m][k]);
+				}
+			}
+			printf("\n");
+		}
+
+	} else {
+		printf("Error file format not supported yet !\n");
+		exit(0);
+	}
+
+	fclose(f);
+
+	code->nbBranch = 0;
+	for (m = 0; m < M; m++)
+		code->nbBranch += code->rowDegree[m];
+
+	if (code->dcMax == 0) {
+		code->dcMax = code->rowDegree[0];
+	}
+
+	if (code->dvMax == 0) {
+		code->dvMax = code->columnDegree[0];
+	}
+
+	free(FileName);
+
+	printf("LDPC code parameters: \n");
+	printf(" \t N \t:%d \n \t K \t:%d \n \t M\t:%d \n \t CR\t:%g \n \t GF \t:%d \n \t logGF \t:%d\n", N, N - M, M, code->rate, GF, logGF);
+	fflush(stdout);
+}
+
+/**
+ * \fn LoadCode
+ * \brief Open a parity-check matrix file. Allocate and initialize the code structures
+ * Parameters    :
+ * Inputs        :
+ * 	- FileMatrix  : Name of the parity-check matrix file
+ * 	- code_t code : Structure that describes the code
+ * Outputs       :
+ */
 void LoadCode(const char * FileMatrix, code_t * code) {
 	int	   M;
 	int	   N;
@@ -97,6 +356,15 @@ void LoadCode(const char * FileMatrix, code_t * code) {
 	for (m = 0; m < M; m++) {
 		code->nbBranch += code->rowDegree[m];
 	}
+
+	if (code->dcMax == 0) {
+		code->dcMax = code->rowDegree[0];
+	}
+
+	if (code->dvMax == 0) {
+		code->dvMax = code->columnDegree[0];
+	}
+
 	printf("LDPC code parameters: \n");
 	printf(" \t N \t:%d \n \t K \t:%d \n \t M\t:%d \n \t CR\t:%g \n \t GF \t:%d \n \t logGF \t:%d\n", N, N - M, M, code->rate, GF, logGF);
 	fflush(stdout);
@@ -164,7 +432,7 @@ static void Table_Mul_DEC(table_t * table, int GF) {
 	//    getchar();
 }
 
-//divide dicimal by GF and output GF
+//divide decimal by GF and output GF
 static void Table_Div_DEC(table_t * table, int GF) {
 
 	int i, j;
@@ -257,8 +525,10 @@ static void Table_Mul_GF(int ** MULGF, int GF) {
  * Outputs       :
  */
 static void Table_Div_GF(int ** DIVGF, int GF) {
-	int i, j, nb;
-	nb = GF - 1;
+	int i;
+	int j;
+	int nb = GF - 1;
+
 	for (i = 0; i < GF; i++) {
 		for (j = 0; j < GF; j++) {
 			if (j == 0) {
@@ -284,6 +554,184 @@ static void Table_Div_GF(int ** DIVGF, int GF) {
 	//        printf(" \n ");
 	//    }
 	//    getchar();
+}
+
+/*!
+ * \fn Bin2GF
+ * \brief compute a GF(q) symbol corresponding to a frame of log_2(GF) bits
+ * Parameters    :
+ * Inputs        :
+ * 	- int *U    : array representing logGF bits
+ * 	- int logGF : size of the array U. logGF = log2 (GF)
+ * 	- int GF    : order of the field
+ * 	- int ** BINGF: binary mapping table
+ * Outputs       :
+ *      - index of the non-binary symbol
+ */
+
+static int Bin2GF(int * U, int GF, int logGF, int ** BINGF) {
+	int k;
+
+	for (k = 0; k < GF; k++) {
+		if (memcmp(U, BINGF[k], sizeof(int) * logGF) == 0)
+			break;
+	}
+	return (k);
+}
+
+/*!
+ * \fn Table_MUL_GF
+ * \brief Compute the addition table in GF(q)
+ * Parameters    :
+ * Inputs        :
+ * 	- table  : structure containing an allocated pointer to the addition table
+ * 	- int logGF : logGF = log2 (GF)
+ * 	- int GF    : order of the field
+ * Outputs       :
+ */
+static void Table_Add_GF(table_t * table, int GF, int logGF) {
+	int i, j, k;
+	int temp[8];
+
+	for (j = 0; j < GF; j++) {
+		for (k = 0; k < GF; k++) {
+			for (i = 0; i < logGF; i++) {
+				temp[i] = (table->BINGF[j][i]) ^ (table->BINGF[k][i]);
+			}
+			table->ADDGF[j][k] = Bin2GF(temp, GF, logGF, table->BINGF);
+			//            printf("ADD(%2d,%2d) => %2d\n", j, k, table->ADDGF[j][k]);
+		}
+	}
+
+//#define DUMP_GF
+#ifdef DUMP_GF
+	printf("const int GF%d_BINGF[%d][%d]=\n{\n", GF, GF, logGF);
+	for (j = 0; j < GF; j++) {
+		printf("  {");
+		for (k = 0; k < logGF; k++) {
+			printf("%d", table->BINGF[j][k]);
+			if ((k + 1) != logGF)
+				printf(", ");
+		}
+		printf("}");
+		if ((j + 1) != GF)
+			printf(",\n");
+	}
+	printf("\n};\n\n");
+
+	//////////////////////////////////////////////////////////////////////////////
+
+	printf("const int GF%d_S2N[%d]=\n{", GF, GF);
+	int table_back[256];
+	for (j = 0; j < GF; j++) {
+		if ((j % 8) == 0)
+			printf("\n  ");
+		int v = 0;
+		for (k = 0; k < logGF; k++) {
+			v = (v << 1) + table->BINGF[j][k];
+		}
+		table_back[v] = j;
+		printf("%3d", v);
+		if ((j + 1) != GF)
+			printf(", ");
+	}
+	printf("\n};\n\n");
+
+	printf("const int GF%d_N2S[%d]=\n{", GF, GF);
+	for (j = 0; j < GF; j++) {
+		if ((j % 8) == 0)
+			printf("\n  ");
+		printf("%3d", table_back[j]);
+		if ((j + 1) != GF)
+			printf(", ");
+	}
+	printf("\n};\n\n");
+
+	printf("const int GF%d_ADD[%d][%d]=\n{", GF, GF, GF);
+	for (j = 0; j < GF; j++) {
+		printf("  {");
+		for (k = 0; k < GF; k++) {
+			printf("%2d", table->ADDGF[j][k]);
+			if ((k + 1) != GF)
+				printf(", ");
+		}
+		printf("}");
+		if ((j + 1) != GF)
+			printf(",\n");
+	}
+	printf("\n}\n");
+
+	printf("// SYMBOL INDICE OF PRODUCED DATA\n");
+	printf("const int GF%d_ADD_Natural[%d][%d]=\n{", GF, GF, GF);
+	unsigned short tab[256][256];
+	for (j = 0; j < GF; j++) {
+		printf("  {");
+		for (k = 0; k < GF; k++) {
+			tab[j][k] = j ^ k;
+			if (GF < 10)
+				printf("%1u", tab[j][k]);
+			else if (GF < 100)
+				printf("%2u", tab[j][k]);
+			else
+				printf("%3u", tab[j][k]);
+			if ((k + 1) != GF)
+				printf(", ");
+		}
+		printf("}");
+		if ((j + 1) != GF)
+			printf(",\n");
+	}
+	printf("\n}\n");
+
+	printf("// SYMBOL INDICE OF PRODUCED DATA\n");
+	printf("const int GF%d_ADD_fast_table_avx[%d * %d]={\n", GF, GF, GF);
+	for (j = 1; j < GF; j++) {
+		printf("  ");
+		for (k = 0; k < GF; k++) {
+			unsigned int v	 = tab[j][k];
+			unsigned int pos = -1;
+			for (int z = 0; z < GF; z += 1) {
+				if (tab[j - 1][z] == v) {
+					pos = z;
+					break;
+				}
+			}
+
+			if (GF < 10)
+				printf("%1u", pos);
+			else if (GF < 100)
+				printf("%2u", pos);
+			else
+				printf("%3u", pos);
+			if ((k + 1) != GF)
+				printf(", ");
+		}
+		printf(",\n");
+	}
+	{
+		printf("  ");
+		for (k = 0; k < GF; k++) {
+			unsigned int v	 = tab[0][k];
+			unsigned int pos = -1;
+			for (int z = 0; z < GF; z += 1) {
+				if (tab[GF - 1][z] == v) {
+					pos = z;
+					break;
+				}
+			}
+
+			if (GF < 10)
+				printf("%1u", pos);
+			else if (GF < 100)
+				printf("%2u", pos);
+			else
+				printf("%3u", pos);
+			if ((k + 1) != GF)
+				printf(", ");
+		}
+	}
+	printf("\n}\n");
+#endif
 }
 
 /**
@@ -422,6 +870,121 @@ void LoadTables(table_t * table, int GF, int logGF) {
 	Table_Div_DEC(table, GF);
 }
 
+/**
+ * \fn void LoadTables (table_t *table, int GF, int logGF)
+ * \brief Memory allocation for the tables and Initialization of the tables.
+ * Inputs        :
+ * 	- table_t table : Structure that contains pointers to the tables
+ * 	- int GF    : order of the field
+ * 	- int logGF : logGF = log2(GF)
+ * Outputs       :
+ */
+void LoadTables2Dump(table_t * table, int GF, int logGF) {
+	int nbRow, nbCol, g, k, l;
+
+	if (GF != 16 && GF != 64 && GF != 32 && GF != 128 && GF != 256) {
+		printf("The binary image of GF(%d) is not available in this version of the program. Please try GF(64) or GF(256)\n", GF);
+		exit(EXIT_FAILURE);
+	}
+	printf("GF configuration = %d\n", GF);
+
+	nbRow = GF;
+	nbCol = logGF;
+	printf("GF Matrix (%d, %d)\n", GF, nbCol);
+	/* BINGF [GF][logGF] */
+	table->BINGF = calloc((size_t)nbRow, sizeof(int *));
+	//if (table->BINGF  == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	table->BINGF[0] = calloc((size_t)nbRow * nbCol, sizeof(int));
+	//if (table->BINGF [0] == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	for (k = 1; k < nbRow; k++)
+		table->BINGF[k] = table->BINGF[0] + k * nbCol;
+
+	nbRow = GF;
+	nbCol = GF;
+	/* ADDGF [GF][logGF] */
+	table->ADDGF = calloc((size_t)nbRow, sizeof(int *));
+	//if (table->ADDGF  == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	table->ADDGF[0] = calloc((size_t)nbRow * nbCol, sizeof(int));
+	//if (table->ADDGF [0] == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	for (k = 1; k < nbRow; k++)
+		table->ADDGF[k] = table->ADDGF[0] + k * nbCol;
+
+	/* MULGF [GF][logGF] */
+	table->MULGF = calloc((size_t)nbRow, sizeof(int *));
+	//if (table->MULGF  == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	table->MULGF[0] = calloc((size_t)nbRow * nbCol, sizeof(int));
+	//if (table->MULGF [0] == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	for (k = 1; k < nbRow; k++)
+		table->MULGF[k] = table->MULGF[0] + k * nbCol;
+
+	/* DIVGF [GF][logGF] */
+	table->DIVGF = calloc((size_t)nbRow, sizeof(int *));
+	//if (table->DIVGF  == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	table->DIVGF[0] = calloc((size_t)nbRow * nbCol, sizeof(int));
+	//if (table->DIVGF [0] == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	for (k = 1; k < nbRow; k++)
+		table->DIVGF[k] = table->DIVGF[0] + k * nbCol;
+
+	if (GF == 16) {
+		for (g = 0; g < GF; g++)
+			for (l = 0; l < logGF; l++)
+				table->BINGF[g][l] = BinGF_16[g][l];
+		//printf("Loading of the binary image of GF(64): Success\n");
+		//fflush(stdout);
+	}
+
+	if (GF == 32) {
+		for (g = 0; g < GF; g++)
+			for (l = 0; l < logGF; l++)
+				table->BINGF[g][l] = BinGF_32[g][l];
+	}
+
+	if (GF == 64) {
+		for (g = 0; g < GF; g++)
+			for (l = 0; l < logGF; l++)
+				table->BINGF[g][l] = BinGF_64[g][l];
+				//printf("Loading of the binary image of GF(64): Success\n");
+				//fflush(stdout);
+#if 0
+        int i, j;
+        printf("const int GF64_BINGF[%d][%d]=\n{\n", GF, logGF);
+        for(i=0; i<GF; i++)
+        {
+            printf("  {");
+            for(j=0; j<logGF; j++)
+            {
+              printf("%d", BinGF_64[i][j]);
+              if((j+1) != logGF) printf(", ");
+            }
+            printf("}");
+            if((i+1) != GF) printf(",\n");
+          }
+          printf("\n};\n");
+#endif
+	}
+
+	if (GF == 128) {
+		for (g = 0; g < GF; g++)
+			for (l = 0; l < logGF; l++)
+				table->BINGF[g][l] = BinGF_128[g][l];
+	}
+
+	if (GF == 256) {
+		for (g = 0; g < GF; g++)
+			for (l = 0; l < logGF; l++)
+				table->BINGF[g][l] = BinGF_256[g][l];
+		//printf("Loading of the binary image of GF(256): Success\n");
+		//fflush(stdout);
+	}
+
+	/*
+     * Build the addition, multiplication and division tables (corresponding to GF[q])
+     */
+	Table_Add_GF(table, GF, logGF);
+	Table_Mul_GF(table->MULGF, GF);
+	Table_Div_GF(table->DIVGF, GF);
+}
+
 /*!
  * \fn FreeTable(table_t *table)
  * \brief Free the memory in a table_t structure
@@ -507,9 +1070,15 @@ void GaussianElimination(code_t * code, table_t * table) {
 }
 
 void DumpHlayered(const code_t * code) {
-	printf("DUMPING CODE IN FILE\n");
-
 	char buffer[256];
+
+	sprintf(buffer, "././%db_%dx%d_GF%d", code->logGF * code->N, code->N, code->M, code->GF);
+	//    sprintf(buffer, "./%dx%d_GF%d", code->N, code->M, code->GF);
+	struct stat st = {0};
+	if (stat(buffer, &st) == -1) {
+		mkdir(buffer, 0700);
+	}
+
 	sprintf(buffer, "././%db_%dx%d_GF%d/hlayered.h", code->logGF * code->N, code->N, code->M, code->GF);
 	FILE * f = fopen(buffer, "w");
 
@@ -557,6 +1126,88 @@ void DumpHlayered(const code_t * code) {
 			fprintf(f, ", /* [%2d] */\n  ", node);
 	}
 	fprintf(f, "  /* [%2d] */\n};\n", code->M - 1);
+	fprintf(f, "\n#endif\n");
+	fclose(f);
+}
+
+void DumpConstants(const code_t * code) {
+	char buffer[256];
+
+	sprintf(buffer, "././%db_%dx%d_GF%d", code->logGF * code->N, code->N, code->M, code->GF);
+	//    sprintf(buffer, "./%dx%d_GF%d", code->N, code->M, code->GF);
+	struct stat st = {0};
+	if (stat(buffer, &st) == -1) {
+		mkdir(buffer, 0700);
+	}
+
+	sprintf(buffer, "././%db_%dx%d_GF%d/constantes.h", code->logGF * code->N, code->N, code->M, code->GF);
+	//                    sprintf(buffer, "././%dx%d_GF%d/constantes.h", code->N, code->M, code->GF);
+	FILE * f = fopen(buffer, "w");
+	fprintf(f, "#ifndef CONSTANTES\n");
+	fprintf(f, "#define CONSTANTES\n");
+	fprintf(f, "\n");
+	fprintf(f, "#include <math.h>\n");
+	fprintf(f, "\n");
+	fprintf(f, "#define _GF_        		%3d\n", code->GF);
+	fprintf(f, "#define _LOG2GF_    		%3d\n", code->logGF);
+	fprintf(f, "\n");
+	fprintf(f, "#define _KSYMBOL_   		%3d\n", code->N - code->M);
+	fprintf(f, "#define _NSYMBOL_   		%3d\n", code->N);
+	fprintf(f, "#define _MESSAGE_   		%3d\n", code->M * code->dcMax); // REGULAR CODE ONLY !!!
+	fprintf(f, "\n");
+	fprintf(f, "#define _DEG_CN_             %3d\n", code->dcMax);
+	fprintf(f, "#define _DEG_COMPUTATIONS_   %3d\n", code->M);
+	fprintf(f, "\n");
+	fprintf(f, "#define _KBIT_      		(_KSYMBOL_*_LOG2GF_)\n");
+	fprintf(f, "#define _NBIT_      		(_NSYMBOL_*_LOG2GF_)\n");
+	fprintf(f, "\n");
+	fprintf(f, "#define _NmKSYMBOL_ 	 	(_NSYMBOL_-_KSYMBOL_)\n");
+	fprintf(f, "#define _NmKBIT_     		(_NBIT_-_KBIT_)\n");
+	fprintf(f, "\n");
+	fprintf(f, "#endif\n");
+	fclose(f);
+}
+
+void DumpEncoder(const code_t * code) {
+	char buffer[256];
+
+	sprintf(buffer, "././%db_%dx%d_GF%d", code->logGF * code->N, code->N, code->M, code->GF);
+	//    sprintf(buffer, "./%dx%d_GF%d", code->N, code->M, code->GF);
+	struct stat st = {0};
+	if (stat(buffer, &st) == -1) {
+		mkdir(buffer, 0700);
+	}
+
+	sprintf(buffer, "././%db_%dx%d_GF%d/encoder.h", code->logGF * code->N, code->N, code->M, code->GF);
+	//    sprintf(buffer, "././%dx%d_GF%d/encoder.h", code->N, code->M, code->GF);
+	FILE * f = fopen(buffer, "w");
+
+	fprintf(f, "#ifndef _EncoderTable_\n");
+	fprintf(f, "#define _EncoderTable_\n");
+	fprintf(f, "\n");
+	fprintf(f, "const int GF%d_ENC[%d][%d]=\n{\n", code->GF, code->M, code->N);
+	for (int m = 0; m < code->M; m++) {
+		fprintf(f, "  {");
+		for (int n = 0; n < code->N; n++) {
+			fprintf(f, "%2d", code->matUT[m][n]);
+			if ((n + 1) != code->N)
+				fprintf(f, ", ");
+		}
+		fprintf(f, "}");
+		if ((m + 1) != code->M)
+			fprintf(f, ",\n");
+	}
+	fprintf(f, "\n};\n");
+	fprintf(f, "\n");
+	fprintf(f, "const int GF%d_PERM[%d]=\n{", code->GF, code->N);
+	for (int i = 0; i < code->N; i++) {
+		if ((i % 16) == 0)
+			fprintf(f, "\n  ");
+		fprintf(f, "%3d", code->Perm[i]);
+		if ((i + 1) != code->N)
+			fprintf(f, ", ");
+	}
+	fprintf(f, "\n};\n");
 	fprintf(f, "\n#endif\n");
 	fclose(f);
 }

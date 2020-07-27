@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.13.4) # setting this is required
 
-SET (CMAKE_C_COMPILER   gcc)
-SET (CMAKE_C_STANDARD   11)
-SET (CMAKE_CXX_COMPILER g++)
-SET (CMAKE_CXX_STANDARD 14)
+SET(CMAKE_C_COMPILER   gcc)
+SET(CMAKE_C_STANDARD   11)
+SET(CMAKE_CXX_COMPILER g++)
+SET(CMAKE_CXX_STANDARD 14)
+SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
+SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ../lib)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 
 project(NB-LDPC-Toolbox)            # this sets the project name
 
@@ -22,10 +25,12 @@ include_directories(sources)
 ## target definitions #########################################################
 ###############################################################################
 
-add_compile_options(-Wall -pedantic -Wextra -Werror -O3)
+add_compile_options(-Wall -pedantic -Wextra -Werror)
 
 add_link_options(-lm)
 
 add_library(nb_ldpc_toolbox ${sources})
+
+add_library(nb_ldpc_toolbox_dyn SHARED ${sources})
 
 add_executable(file-generator main.c $<TARGET_OBJECTS:nb_ldpc_toolbox>)
