@@ -39,6 +39,7 @@
 *build
 *obj
 *.pyc
+*.code-workspace
 
 #HLS artifacts
 *hls.log
