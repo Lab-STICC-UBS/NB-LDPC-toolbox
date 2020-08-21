@@ -67,3 +67,6 @@
 *.snm
 *.synctex
 *.synctex.gz
+
+*/bin
+*/lib

@@ -1,14 +1,13 @@
 cmake_minimum_required (VERSION 3.13.4) # setting this is required
 
+project(NB-LDPC-C-Toolbox LANGUAGES C)            # this sets the project name
+
 SET (CMAKE_C_COMPILER   gcc)
 SET (CMAKE_C_STANDARD   11)
-SET (CMAKE_CXX_COMPILER g++)
-SET (CMAKE_CXX_STANDARD 14)
 SET (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ../lib)
 SET (CMAKE_LIBRARY_OUTPUT_DIRECTORY ../lib)
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 
-project(NB-LDPC-Toolbox)            # this sets the project name
 
 ###############################################################################
 ## file globbing ##############################################################
