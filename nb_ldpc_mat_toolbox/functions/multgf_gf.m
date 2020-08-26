@@ -28,7 +28,7 @@ function [gf_value] = multgf_gf(operandA, varargin)
 % %     > alpha^0   => 2           => 2
 % %     > alpha^1   => 3           => 3
 % %     > alpha^2   => 4           => 5
-% %     > alpha^3   => 5           => 5
+% %     > alpha^3   => 5           => 4
 % %     > alpha^4   => 6           => 7
 % %     > alpha^5   => 7           => 8
 % %     > alpha^6   => 8           => 6
