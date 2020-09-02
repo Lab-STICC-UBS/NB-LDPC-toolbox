@@ -14,15 +14,17 @@
  * Outputs       :
  */
 void LoadCode2Dump(const char * FileMatrix, code_t * code) {
-	int	   M;
-	int	   N;
-	int	   GF;
-	int	   logGF;
-	int	   n;
-	int	   m;
-	int	   k;
+	int	   M		= 0;
+	int	   N		= 0;
+	int	   GF		= 0;
+	int	   logGF	= 0;
+	int	   dvMax	= 0;
+	int	   dcMax	= 0;
+	int	   n		= 0;
+	int	   m		= 0;
+	int	   k		= 0;
 	char * FileName = malloc(STR_MAXSIZE);
-	double temp;
+	double temp		= 0.0;
 
 	// Load the files corresponding to code (graph, size, GF)
 	strncpy(FileName, FileMatrix, STR_MAXSIZE);
@@ -35,7 +37,8 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 	fscanf(f, "%d", &N);
 	fscanf(f, "%d", &M);
 	fscanf(f, "%d", &GF);
-	//    GF = 128;
+	fscanf(f, "%d", &dvMax);
+	fscanf(f, "%d", &dcMax);
 	temp		= log((double)(GF));
 	temp		= temp / log((double)2.0);
 	temp		= rint(temp);
@@ -46,8 +49,10 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 	code->rate	= (float)(N - M) / N;
 	code->GF	= GF;
 	code->logGF = logGF;
+	code->dvMax = dvMax;
+	code->dcMax = dcMax;
 
-	printf("Parameters [N = %d, M = %d, NmK = %d, GF = %d]\n", N, M, N - M, GF);
+	printf("Parameters [N = %d, M = %d, NmK = %d, GF = %d, dv max = %d, dc max = %d]\n", N, M, N - M, GF, dvMax, dcMax);
 
 	code->columnDegree = calloc(N, sizeof(int));
 	code->rowDegree	   = calloc(M, sizeof(int));
@@ -75,10 +80,12 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		int rowdeg, coldeg;
 		fscanf(f, "%d", &coldeg);
 		fscanf(f, "%d", &rowdeg);
-		for (int n = 0; n < N; n++)
+		for (int n = 0; n < N; n++) {
 			code->columnDegree[n] = coldeg;
-		for (int m = 0; m < M; m++)
+		}
+		for (int m = 0; m < M; m++) {
 			code->rowDegree[m] = rowdeg;
+		}
 	}
 
 	code->mat = calloc(M, sizeof(int *));
@@ -149,10 +156,12 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
 				fscanf(f, "%d", &temp_int);
 				code->mat[m][k] = temp_int - 1;
-
+				// printf("%d ", temp_int - 1);
 				fscanf(f, "%d", &temp_int);
 				code->matValue[m][k] = (temp_int + 1); // % 128;
+				// printf("%d ", temp_int + 1);
 			}
+			printf("\n");
 		}
 
 	} else if (strstr(FileName, ".ref") != NULL) {
