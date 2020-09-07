@@ -89,10 +89,16 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 	}
 
 	code->mat = calloc(M, sizeof(int *));
-	//if ( code->mat == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+	if (code->mat == NULL) {
+		fprintf(stderr, "%s:%d > malloc failed !", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
 	for (m = 0; m < M; m++) {
 		code->mat[m] = calloc(code->rowDegree[m], sizeof(int));
-		//if ( code->mat[m] == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+		if ((code->mat[m] == NULL) || (code->mat[m][0] + code->mat[m][1] + code->mat[m][2] != 0)) {
+			fprintf(stderr, "%s:%d > malloc failed !", __FILE__, __LINE__);
+			exit(EXIT_FAILURE);
+		}
 	}
 	code->matValue = calloc(M, sizeof(int *));
 	for (m = 0; m < M; m++) {
@@ -151,15 +157,15 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 
 	} else if (strstr(FileName, ".ubs") != NULL) {
 		printf(" \n UBS alist format is used! \n");
-		int temp_int;
+		int temp_int = 0;
 		for (m = 0; m < M; m++) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
 				fscanf(f, "%d", &temp_int);
 				code->mat[m][k] = temp_int - 1;
-				// printf("%d ", temp_int - 1);
+				printf("%d ", temp_int - 1);
 				fscanf(f, "%d", &temp_int);
 				code->matValue[m][k] = (temp_int + 1); // % 128;
-				// printf("%d ", temp_int + 1);
+				printf("%d ", temp_int + 1);
 			}
 			printf("\n");
 		}
@@ -1019,25 +1025,50 @@ void GaussianElimination(code_t * code, table_t * table) {
 
 	printf("MatUT (%d, %d)\n", M, N);
 
-	code->matUT = calloc((size_t)M, sizeof(int *));
-	//if (code->matUT == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
-	code->matUT[0] = calloc((size_t)M * N, sizeof(int));
+	code->matUT = (int **)calloc((size_t)M, sizeof(int *));
+	if (code->matUT == NULL) {
+		fprintf(stderr, "%s:%d > calloc failed !", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
+#if 0
+	code->matUT[0] = (int *) calloc((size_t)M * N, sizeof(int));
 	//if (code->matUT[0] == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
 	for (k = 1; k < M; k++)
 		code->matUT[k] = code->matUT[0] + k * N;
+#else
+	for (k = 0; k < M; k++) {
+		code->matUT[k] = (int *)calloc((size_t)N, sizeof(int));
+	}
 
-	code->Perm = calloc(N, sizeof(int));
-	//if (code->Perm == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+#endif
+	code->Perm = (int *)calloc(N, sizeof(int));
+	if (code->Perm == NULL) {
+		fprintf(stderr, "%s:%d > calloc failed !", __FILE__, __LINE__);
+		exit(EXIT_FAILURE);
+	}
 
-	for (n = 0; n < N; n++)
+	printf("Perm = [ ");
+	for (n = 0; n < N; n++) {
 		code->Perm[n] = n;
+		printf("%d, ", code->Perm[n]);
+	}
+	printf("]\n");
 
 	for (m = 0; m < M; m++) {
 		for (k = 0; k < code->rowDegree[m]; k++) {
 			code->matUT[m][code->mat[m][k]] = code->matValue[m][k];
 		}
 	}
-
+	printf("matUT = [ \n");
+	for (m = 0; m < M; m++) {
+		printf("[ ");
+		for (k = 0; k < N; k++) {
+			printf("%d, ", code->matUT[m][k]);
+		}
+		printf("],\n");
+	}
+	printf("]\n\n");
+	//* NOTE Until here, everything is fine.
 	for (m = 0; m < M; m++) {
 		for (ind = m; ind < N; ind++) {
 			if (code->matUT[m][ind] != 0)
@@ -1076,6 +1107,16 @@ void GaussianElimination(code_t * code, table_t * table) {
 			}
 		}
 	}
+
+	printf("matUT = [ \n");
+	for (m = 0; m < M; m++) {
+		printf("[ ");
+		for (k = 0; k < N; k++) {
+			printf("%d, ", code->matUT[m][k]);
+		}
+		printf("],\n");
+	}
+	printf("]\n\n");
 }
 
 void DumpHlayered(const code_t * code) {
