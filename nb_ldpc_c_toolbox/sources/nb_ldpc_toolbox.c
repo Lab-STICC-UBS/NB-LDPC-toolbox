@@ -1,8 +1,27 @@
 #include "nb_ldpc_toolbox.h"
 
+#include <errno.h>
+#include <error.h>
 #include <math.h>
 
 #define STR_MAXSIZE 512
+
+static void check_l_f(int value, int expected, const FILE * f, int line, const char * file) {
+	if (value < expected) {
+		if (value == EOF) {
+			if (f != NULL) {
+				perror(NULL);
+			} else {
+				fprintf(stderr, "Error line %d in file %s: File not opened.", line, file);
+			}
+		} else {
+			fprintf(stderr, "Error line %d in file %s: Not enough items have been read.", line, file);
+		}
+
+		exit(EXIT_FAILURE);
+	}
+}
+#define check(value, expected, f) check_l_f(value, expected, f, __LINE__, __FILE__)
 
 /**
  * \fn LoadCode
@@ -27,18 +46,18 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 	double temp		= 0.0;
 
 	// Load the files corresponding to code (graph, size, GF)
-	strncpy(FileName, FileMatrix, STR_MAXSIZE);
+	strncpy(FileName, FileMatrix, STR_MAXSIZE - 1);
 	FILE * f = fopen(FileName, "r");
 	if (f == NULL) {
 		printf("Erreur a l'ouverture du fichier... (%s)\n", FileMatrix);
 		exit(EXIT_FAILURE);
 	}
 
-	fscanf(f, "%d", &N);
-	fscanf(f, "%d", &M);
-	fscanf(f, "%d", &GF);
-	fscanf(f, "%d", &dvMax);
-	fscanf(f, "%d", &dcMax);
+	check(fscanf(f, "%d", &N), 1, f);
+	check(fscanf(f, "%d", &M), 1, f);
+	check(fscanf(f, "%d", &GF), 1, f);
+	check(fscanf(f, "%d", &dvMax), 1, f);
+	check(fscanf(f, "%d", &dcMax), 1, f);
 	temp		= log((double)(GF));
 	temp		= temp / log((double)2.0);
 	temp		= rint(temp);
@@ -60,7 +79,7 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 	if (strstr(FileName, ".ref") == NULL) {
 
 		for (n = 0; n < N; n++) {
-			fscanf(f, "%d", &code->columnDegree[n]);
+			check(fscanf(f, "%d", &code->columnDegree[n]), 1, f);
 		}
 		for (n = 0; n < N; n++) {
 			printf("%d, ", code->columnDegree[n]);
@@ -68,7 +87,7 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		printf("\n");
 
 		for (m = 0; m < M; m++) {
-			fscanf(f, "%d", &code->rowDegree[m]);
+			check(fscanf(f, "%d", &code->rowDegree[m]), 1, f);
 		}
 		for (m = 0; m < M; m++) {
 			printf("%d, ", code->rowDegree[m]);
@@ -78,8 +97,8 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 	} else {
 
 		int rowdeg, coldeg;
-		fscanf(f, "%d", &coldeg);
-		fscanf(f, "%d", &rowdeg);
+		check(fscanf(f, "%d", &coldeg), 1, f);
+		check(fscanf(f, "%d", &rowdeg), 1, f);
 		for (int n = 0; n < N; n++) {
 			code->columnDegree[n] = coldeg;
 		}
@@ -90,34 +109,37 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 
 	code->mat = calloc(M, sizeof(int *));
 	if (code->mat == NULL) {
-		fprintf(stderr, "%s:%d > malloc failed !", __FILE__, __LINE__);
+		fprintf(stderr, "%s:%d > calloc failed !", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 	for (m = 0; m < M; m++) {
 		code->mat[m] = calloc(code->rowDegree[m], sizeof(int));
 		if ((code->mat[m] == NULL) || (code->mat[m][0] + code->mat[m][1] + code->mat[m][2] != 0)) {
-			fprintf(stderr, "%s:%d > malloc failed !", __FILE__, __LINE__);
+			fprintf(stderr, "%s:%d > calloc failed !", __FILE__, __LINE__);
 			exit(EXIT_FAILURE);
 		}
 	}
 	code->matValue = calloc(M, sizeof(int *));
 	for (m = 0; m < M; m++) {
 		code->matValue[m] = calloc(code->rowDegree[m], sizeof(int));
-		//if ( code->matValue [m] == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
+		if (code->matValue[m] == NULL) {
+			fprintf(stderr, "%s:%d > calloc failed !", __FILE__, __LINE__);
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (strstr(FileName, ".kn") != NULL) {
 		printf(" \n KN alist format is used! \n");
 		for (m = 0; m < M; m++) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &code->mat[m][k]);
+				check(fscanf(f, "%d", &code->mat[m][k]), 1, f);
 				code->mat[m][k] -= 1; // Pour E. Boutillon
 			}
 		}
 
 		for (m = 0; m < M; m++)
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &code->matValue[m][k]);
+				check(fscanf(f, "%d", &code->matValue[m][k]), 1, f);
 				code->matValue[m][k] += 1; // Pour E. Boutillon
 			}
 
@@ -126,26 +148,26 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		printf(" \n MATLAB alist format is used! \n");
 		for (m = 0; m < M; m++) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &code->mat[m][k]);
+				check(fscanf(f, "%d", &code->mat[m][k]), 1, f);
 				code->mat[m][k] -= 1;
 			}
 		}
 		for (m = 0; m < M; m++)
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &code->matValue[m][k]);
+				check(fscanf(f, "%d", &code->matValue[m][k]), 1, f);
 			}
 
 	} else if (strstr(FileName, ".ubs.bis") != NULL) {
 
-		printf(" \n UBS alist format is used! \n");
+		printf(" \nUBS alist format is used!\n\n");
 		int temp_int;
 		for (m = 0; m < M; m++) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				assert((temp_int - 1) < N);
 				code->mat[m][k] = temp_int - 1;
 
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->matValue[m][k] = temp_int;
 
 				//                  printf("%d | ", code->matValue[m][k]); fflush( stdout ); //temp_int, GF - temp_int);
@@ -156,27 +178,27 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		}
 
 	} else if (strstr(FileName, ".ubs") != NULL) {
-		printf(" \n UBS alist format is used! \n");
+		printf(" \nUBS alist format is used!\nIt is as follows:\n");
 		int temp_int = 0;
 		for (m = 0; m < M; m++) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->mat[m][k] = temp_int - 1;
 				printf("%d ", temp_int - 1);
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->matValue[m][k] = (temp_int + 1); // % 128;
 				printf("%d ", temp_int + 1);
 			}
 			printf("\n");
 		}
-
+		printf("\n");
 	} else if (strstr(FileName, ".ref") != NULL) {
 		printf(" \n REF alist format is used! \n");
 		int temp_int;
 		for (m = 0; m < M; m++) {
 			printf("CN %2d : ", m);
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->mat[m][k] = temp_int;
 
 				printf("%2d ", code->mat[m][k]);
@@ -191,11 +213,11 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		int temp_int;
 		for (m = 0; m < M; m++) {
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &temp_int); // POSITION DU CN, USELESS !
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f); // POSITION DU CN, USELESS !
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->mat[m][k] = (temp_int - 1); // POSITION DU VN
 
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->matValue[m][k] = (temp_int + 1);
 			}
 		}
@@ -210,10 +232,10 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		for (m = 0; m < M; m++) {
 			printf("ROW %2d : ", m);
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->mat[m][k] = temp_int - 1;
 
-				fscanf(f, "%d", &temp_int);
+				check(fscanf(f, "%d", &temp_int), 1, f);
 				code->matValue[m][k] = (temp_int + 1);
 
 				printf("%2d (%3d) ", code->mat[m][k], code->matValue[m][k]);
@@ -233,17 +255,17 @@ void LoadCode2Dump(const char * FileMatrix, code_t * code) {
 		for (m = 0; m < M; m++) {
 			printf("ROW %2d : ", m);
 			for (k = 0; k < code->rowDegree[m]; k++) {
-				fscanf(f, "%s", buffer);
+				check(fscanf(f, "%s", buffer), 1, f);
 				if (strcmp(buffer, "#") == 0) {
-					fscanf(f, "%d", &offset);
+					check(fscanf(f, "%d", &offset), 1, f);
 					//printf("Offset = %d\n", offset);
 					k = k - 1;
 				} else {
 					temp_int = atoi(buffer);
-					//                    fscanf(f,"%d",&temp_int);
+					//                    check(fscanf(f,"%d",&temp_int), 1, f);
 					code->mat[m][k] = temp_int - 1 + offset;
 
-					fscanf(f, "%d", &temp_int);
+					check(fscanf(f, "%d", &temp_int), 1, f);
 					code->matValue[m][k] = (temp_int + 1);
 
 					printf("%2d (%3d) ", code->mat[m][k], code->matValue[m][k]);
@@ -312,11 +334,11 @@ void LoadCode(const char * FileMatrix, code_t * code) {
 		exit(EXIT_FAILURE);
 	}
 
-	fscanf(f, "%d", &N);
-	fscanf(f, "%d", &M);
-	fscanf(f, "%d", &GF);
-	fscanf(f, "%d", &dvMax);
-	fscanf(f, "%d", &dcMax);
+	check(fscanf(f, "%d", &N), 1, f);
+	check(fscanf(f, "%d", &M), 1, f);
+	check(fscanf(f, "%d", &GF), 1, f);
+	check(fscanf(f, "%d", &dvMax), 1, f);
+	check(fscanf(f, "%d", &dcMax), 1, f);
 	temp		= log((double)(GF));
 	temp		= temp / log((double)2.0);
 	temp		= rint(temp);
@@ -333,13 +355,13 @@ void LoadCode(const char * FileMatrix, code_t * code) {
 	code->columnDegree = calloc(N, sizeof(int));
 	//if ( code->columnDegree == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
 	for (n = 0; n < N; n++) {
-		fscanf(f, "%d", &code->columnDegree[n]);
+		check(fscanf(f, "%d", &code->columnDegree[n]), 1, f);
 	}
 
 	code->rowDegree = calloc(M, sizeof(int));
 	//if ( code->rowDegree == NULL ) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
 	for (m = 0; m < M; m++) {
-		fscanf(f, "%d", &code->rowDegree[m]);
+		check(fscanf(f, "%d", &code->rowDegree[m]), 1, f);
 	}
 
 	code->mat = calloc(M, sizeof(int *));
@@ -358,9 +380,9 @@ void LoadCode(const char * FileMatrix, code_t * code) {
 	int temp_int;
 	for (m = 0; m < M; m++) {
 		for (k = 0; k < code->rowDegree[m]; k++) {
-			fscanf(f, "%d", &temp_int);
+			check(fscanf(f, "%d", &temp_int), 1, f);
 			code->mat[m][k] = temp_int - 1;
-			fscanf(f, "%d", &temp_int);
+			check(fscanf(f, "%d", &temp_int), 1, f);
 			code->matValue[m][k] = temp_int + 1;
 		}
 	}
@@ -901,11 +923,15 @@ void LoadTables2Dump(table_t * table, int GF, int logGF) {
 		printf("The binary image of GF(%d) is not available in this version of the program. Please try GF(64) or GF(256)\n", GF);
 		exit(EXIT_FAILURE);
 	}
+#if (DEBUG > 0)
 	printf("GF configuration = %d\n", GF);
-
+#endif
 	nbRow = GF;
 	nbCol = logGF;
+
+#if (DEBUG > 0)
 	printf("GF Matrix (%d, %d)\n", GF, nbCol);
+#endif
 	/* BINGF [GF][logGF] */
 	table->BINGF = calloc((size_t)nbRow, sizeof(int *));
 	//if (table->BINGF  == NULL) err(EXIT_FAILURE,"%s:%d > malloc failed !",__FILE__,__LINE__);
@@ -1022,8 +1048,10 @@ void GaussianElimination(code_t * code, table_t * table) {
 	const int N = code->N;
 	const int M = code->M;
 	int		  n, m, k, m1, ind, buf;
-
+	
+#if (DEBUG > 0)
 	printf("MatUT (%d, %d)\n", M, N);
+#endif
 
 	code->matUT = (int **)calloc((size_t)M, sizeof(int *));
 	if (code->matUT == NULL) {
@@ -1039,26 +1067,29 @@ void GaussianElimination(code_t * code, table_t * table) {
 	for (k = 0; k < M; k++) {
 		code->matUT[k] = (int *)calloc((size_t)N, sizeof(int));
 	}
-
 #endif
+
 	code->Perm = (int *)calloc(N, sizeof(int));
 	if (code->Perm == NULL) {
 		fprintf(stderr, "%s:%d > calloc failed !", __FILE__, __LINE__);
 		exit(EXIT_FAILURE);
 	}
 
+#if (DEBUG > 2)
 	printf("Perm = [ ");
 	for (n = 0; n < N; n++) {
 		code->Perm[n] = n;
 		printf("%d, ", code->Perm[n]);
 	}
 	printf("]\n");
+#endif
 
 	for (m = 0; m < M; m++) {
 		for (k = 0; k < code->rowDegree[m]; k++) {
 			code->matUT[m][code->mat[m][k]] = code->matValue[m][k];
 		}
 	}
+#if (DEBUG > 1)
 	printf("matUT = [ \n");
 	for (m = 0; m < M; m++) {
 		printf("[ ");
@@ -1068,7 +1099,8 @@ void GaussianElimination(code_t * code, table_t * table) {
 		printf("],\n");
 	}
 	printf("]\n\n");
-	//* NOTE Until here, everything is fine.
+#endif
+
 	for (m = 0; m < M; m++) {
 		for (ind = m; ind < N; ind++) {
 			if (code->matUT[m][ind] != 0)
@@ -1107,7 +1139,7 @@ void GaussianElimination(code_t * code, table_t * table) {
 			}
 		}
 	}
-
+#if (DEBUG > 1)
 	printf("matUT = [ \n");
 	for (m = 0; m < M; m++) {
 		printf("[ ");
@@ -1117,8 +1149,8 @@ void GaussianElimination(code_t * code, table_t * table) {
 		printf("],\n");
 	}
 	printf("]\n\n");
+#endif
 }
-
 void DumpHlayered(const code_t * code) {
 	char buffer[256];
 
