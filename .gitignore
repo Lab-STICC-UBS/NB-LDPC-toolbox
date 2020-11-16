@@ -71,3 +71,6 @@
 */bin
 */lib
 nb_ldpc_c_toolbox/data
+
+*compile_commands.json
+.clangd/

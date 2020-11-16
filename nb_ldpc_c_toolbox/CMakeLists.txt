@@ -11,6 +11,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ../bin)
 set (CMAKE_C_FLAGS_DEBUG "-O0 -ggdb -DDEBUG=2")
 set (CMAKE_C_FLAGS_RELEASE "-O2 -D_FORTIFY_SOURCE=2")
 
+set (CMAKE_EXPORT_COMPILE_COMMANDS true)
+
 project (NB-LDPC-C-Toolbox LANGUAGES C) # this sets the project name
 
 # ##############################################################################
@@ -36,4 +38,4 @@ add_library (nb_ldpc_toolbox ${source-files})
 
 add_library (nb_ldpc_toolbox_dyn SHARED ${source-files})
 
-add_executable (file-generator sources/main.c $<TARGET_OBJECTS:nb_ldpc_toolbox>)
+add_executable (header-generator sources/main.c $<TARGET_OBJECTS:nb_ldpc_toolbox>)

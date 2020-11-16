@@ -1,9 +1,9 @@
-
-H= loadalist_nb('alist_60_40_64.txt');
+close 1
+H = loadalist_nb('alist_60_40_64.txt');
 
 figure(1);
 colormap (colorcube(65));
-H=mod(H,66);
+H = mod(H, 66);
 image(H);
 
 set(gca,'xtick',[]);
